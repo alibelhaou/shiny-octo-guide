@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Сюрприз</title>
+<style>
+  :root{
+    --bg1:#ff8a80;
+    --bg2:#ffd180;
+    --accent:#ffffff;
+  }
+  html,body{height:100%;margin:0;font-family: "Segoe UI", Roboto, Arial, sans-serif;}
+  body{
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+
+  .wrap{
+    text-align:center;
+    transform: translateY(0);
+    padding: 24px;
+    user-select:none;
+  }
+
+  .dulya{
+    font-weight:900;
+    font-size: 18vw; /* very big and responsive */
+    line-height: 0.85;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    text-shadow:
+      0 6px 20px rgba(0,0,0,0.18),
+      0 2px 6px rgba(0,0,0,0.12);
+    margin:0;
+    display:inline-block;
+    transform-origin:center;
+    animation: pop 900ms cubic-bezier(.2,.9,.2,1) 1;
+  }
+
+  @keyframes pop{
+    0%{ transform: scale(.6) rotate(-6deg); opacity:0 }
+    60%{ transform: scale(1.08) rotate(3deg); opacity:1 }
+    100%{ transform: scale(1) rotate(0) }
+  }
+
+  /* shiny overlay */
+  .dulya::after{
+    content:'';
+    position:absolute;
+    display:block;
+    width:100%;
+    height:100%;
+    mix-blend-mode:overlay;
+    top:0;left:0;
+    pointer-events:none;
+    background: linear-gradient(120deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+    filter: blur(0.6px);
+  }
+
+  /* confetti pieces */
+  .confetti{
+    pointer-events:none;
+    position:fixed;
+    inset:0;
+    z-index:5;
+    overflow:visible;
+  }
+  .piece{
+    position:absolute;
+    width:10px;height:14px;
+    transform-origin:center;
+    opacity:0.95;
+    animation: fall linear forwards;
+  }
+
+  @keyframes fall{
+    from{ transform: translateY(-20vh) rotate(0deg) }
+    to{ transform: translateY(120vh) rotate(720deg) }
+  }
+
+  .subtitle{
+    margin-top:8px;
+    color: rgba(255,255,255,0.95);
+    font-size:1.6rem;
+    opacity:0.95;
+  }
+
+  .controls{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+  }
+  .btn{
+    border:0;padding:10px 14px;border-radius:10px;
+    cursor:pointer;font-weight:700;
+    background:rgba(255,255,255,0.12); color:var(--accent);
+    backdrop-filter: blur(4px);
+  }
+  .btn:active{transform:translateY(1px)}
+  .small{font-size:0.9rem;opacity:0.95}
+
+  /* make sure big text stays centered on small screens */
+  @media (max-width:520px){
+    .dulya{ font-size:28vw }
+    .subtitle{ font-size:1.1rem }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap" id="wrap">
+    <h1 class="dulya" id="dulya">ДУЛЯ</h1>
+    <div class="subtitle">Ой! Такой вот сюрприз :)</div>
+
+    <div class="controls">
+      <button class="btn" id="fullscreen">На весь экран</button>
+      <button class="btn" id="share">Скопировать ссылку</button>
+      <button class="btn" id="toggleConf">🎉 Вкл/Выкл конфетти</button>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+
+<script>
+  // create colorful confetti pieces
+  const colors = ['#ffeb3b','#ff5252','#ff4081','#7c4dff','#29b6f6','#66bb6a'];
+  const conf = document.getElementById('confetti');
+  let confOn = true;
+
+  function makePiece(i){
+    const e = document.createElement('div');
+    e.className = 'piece';
+    e.style.left = (Math.random()*100)+'vw';
+    e.style.top = -(Math.random()*20)+'vh';
+    e.style.width = (8 + Math.random()*14) + 'px';
+    e.style.height = (10 + Math.random()*20) + 'px';
+    e.style.background = colors[Math.floor(Math.random()*colors.length)];
+    e.style.borderRadius = (Math.random()>0.5? '2px' : '50% 20%');
+    e.style.animationDuration = (4 + Math.random()*3) + 's';
+    e.style.opacity = 0.9;
+    conf.appendChild(e);
+    // cleanup after animation
+    setTimeout(()=> e.remove(), 8000);
+  }
+
+  // burst initial confetti
+  for(let i=0;i<40;i++){ setTimeout(()=>makePiece(i), i*35) }
+
+  // keep a gentle stream
+  let confInt = setInterval(()=>{ if(confOn) for(let i=0;i<3;i++) makePiece() }, 600);
+
+  // fullscreen button (user gesture required — browsers ask permission)
+  document.getElementById('fullscreen').addEventListener('click', async ()=>{
+    try{
+      if(document.documentElement.requestFullscreen){
+        await document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen){
+        document.documentElement.webkitRequestFullscreen();
+      }
+    }catch(e){ console.log(e) }
+  });
+
+  // share (copy URL) button
+  document.getElementById('share').addEventListener('click', async () => {
+    const url = location.href;
+    try{
+      await navigator.clipboard.writeText(url);
+      alert('Ссылка скопирована — отправь друзьям!');
+    }catch(e){
+      prompt('Скопируй ссылку вручную:', url);
+    }
+  });
+
+  // toggle confetti
+  document.getElementById('toggleConf').addEventListener('click', ()=>{
+    confOn = !confOn;
+    if(!confOn){ conf.innerHTML=''; }
+  });
+
+  // playful wobble when user clicks the big word
+  const d = document.getElementById('dulya');
+  d.addEventListener('click', () => {
+    d.animate([
+      { transform: 'scale(1) rotate(0deg)' },
+      { transform: 'scale(1.06) rotate(-4deg)' },
+      { transform: 'scale(1.02) rotate(3deg)' },
+      { transform: 'scale(1) rotate(0deg)' }
+    ], { duration: 700, easing:'cubic-bezier(.2,.9,.2,1)' });
+  });
+
+  // optional: show the page in full viewport styling even if opened inside messenger preview
+  // nothing more is needed — the big text fills screen on any device.
+</script>
+</body>
+</html>
